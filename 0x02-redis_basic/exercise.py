@@ -1,11 +1,36 @@
 #!/usr/bin/env python3
 """
-Cache class module using Redis with call counting and history tracking
+Cache class module using Redis with call counting, history tracking and replay
 """
 import redis
 import uuid
 import functools
 from typing import Union, Callable, Optional
+
+
+def replay(method: Callable) -> None:
+    """
+    Display the history of calls of a particular function
+    Args:
+        method: The method to display history for
+    """
+    # Get the Redis instance from the class
+    redis_instance = method.__self__._redis
+    method_name = method.__qualname__
+    
+    # Get the number of calls from count_calls decorator
+    calls = redis_instance.get(method_name)
+    calls = int(calls) if calls else 0
+    
+    print(f"{method_name} was called {calls} times:")
+    
+    # Get inputs and outputs from call_history decorator
+    inputs = redis_instance.lrange(f"{method_name}:inputs", 0, -1)
+    outputs = redis_instance.lrange(f"{method_name}:outputs", 0, -1)
+    
+    # Print each call with input and output
+    for inp, out in zip(inputs, outputs):
+        print(f"{method_name}(*{inp.decode('utf-8')}) -> {out.decode('utf-8')}")
 
 
 def count_calls(method: Callable) -> Callable:
@@ -40,17 +65,13 @@ def call_history(method: Callable) -> Callable:
         """
         Wrapper function that stores input and output history
         """
-        # Create input and output list keys
         input_list = f"{method.__qualname__}:inputs"
         output_list = f"{method.__qualname__}:outputs"
         
-        # Store input arguments
         self._redis.rpush(input_list, str(args))
         
-        # Execute the wrapped function
         output = method(self, *args, **kwargs)
         
-        # Store the output
         self._redis.rpush(output_list, str(output))
         
         return output
