@@ -30,7 +30,8 @@ def replay(method: Callable) -> None:
 
     # Print each call with input and output
     for inp, out in zip(inputs, outputs):
-        print(f"{method_name}(*{inp.decode('utf-8')}) -> {out.decode('utf-8')}")
+        print(f"{method_name}(*{inp.decode('utf-8')}) -> \
+            {out.decode('utf-8')}")
 
 
 def count_calls(method: Callable) -> Callable:
@@ -103,7 +104,8 @@ class Cache:
         self._redis.set(key, data)
         return key
 
-    def get(self, key: str, fn: Optional[Callable] = None) -> Union[str, bytes, int, float, None]:
+    def get(self, key: str, fn: Optional[Callable] = None) -> \
+        Union[str, bytes, int, float, None]:
         """
         Get data from Redis and convert it to the desired format
         Args:
