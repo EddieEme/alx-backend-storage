@@ -17,20 +17,21 @@ def replay(method: Callable) -> None:
     # Get the Redis instance from the class
     redis_instance = method.__self__._redis
     method_name = method.__qualname__
-    
+
     # Get the number of calls from count_calls decorator
     calls = redis_instance.get(method_name)
     calls = int(calls) if calls else 0
-    
+
     print(f"{method_name} was called {calls} times:")
-    
+
     # Get inputs and outputs from call_history decorator
     inputs = redis_instance.lrange(f"{method_name}:inputs", 0, -1)
     outputs = redis_instance.lrange(f"{method_name}:outputs", 0, -1)
-    
+
     # Print each call with input and output
     for inp, out in zip(inputs, outputs):
-        print(f"{method_name}(*{inp.decode('utf-8')}) -> {out.decode('utf-8')}")
+        print(f"{method_name}(
+            *{inp.decode('utf-8')}) -> {out.decode('utf-8')}")
 
 
 def count_calls(method: Callable) -> Callable:
@@ -67,13 +68,13 @@ def call_history(method: Callable) -> Callable:
         """
         input_list = f"{method.__qualname__}:inputs"
         output_list = f"{method.__qualname__}:outputs"
-        
+
         self._redis.rpush(input_list, str(args))
-        
+
         output = method(self, *args, **kwargs)
-        
+
         self._redis.rpush(output_list, str(output))
-        
+
         return output
     return wrapper
 
@@ -103,8 +104,9 @@ class Cache:
         self._redis.set(key, data)
         return key
 
-    def get(self, key: str, 
-            fn: Optional[Callable] = None) -> Union[str, bytes, int, float, None]:
+    def get(self, key: str,
+            fn: Optional[Callable] = None
+            ) -> Union[str, bytes, int, float, None]:
         """
         Get data from Redis and convert it to the desired format
         Args:
